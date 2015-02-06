@@ -12,8 +12,10 @@ package editors
 	import flash.events.Event;
 	import flash.events.KeyboardEvent;
 	import flash.events.MouseEvent;
+	import flash.geom.Point;
 	import flash.net.FileFilter;
 	import flash.net.FileReference;
+	import flash.ui.Keyboard;
 	import level.Level;
 	
 	/**
@@ -23,7 +25,10 @@ package editors
 	public class editorMap extends EditorWindow
 	{
 		// Path Colors
-		public static var path_colors:Array = [0xFFFFFF, 0xF42C2C, 0x4A89EF, 0x04EA27, 0x969601, 0xC541E0, 0x41DBE0, 0xD3660C, 0x3D4DE2, 0x98E23D];
+		public static var path_colors:Array = [0x1C771E, 0xF42C2C, 0x4A89EF, 0x04EA27, 0x969601, 0xC541E0, 0x41DBE0, 0xD3660C, 0x3D4DE2, 0x98E23D];
+		
+		public var MAP_STAGE_OFFSET_X:int = 0;
+		public var MAP_STAGE_OFFSET_Y:int = 0;
 		
 		// Hold Shift/Alt/Ctrl Status
 		private var _keys:Object = {};
@@ -97,6 +102,11 @@ package editors
 			map_win = new Window(this, 0, 0, "Map View");
 			map_pan = new ScrollPane(map_win);
 			map_pan.autoHideScrollBar = true;
+			map_pan.addEventListener(MouseEvent.RIGHT_CLICK, e_rightClickPointAdd);
+			
+			var STAGE_OFFSET:Point = map_pan.localToGlobal(new Point());
+			MAP_STAGE_OFFSET_X = STAGE_OFFSET.x;
+			MAP_STAGE_OFFSET_Y = STAGE_OFFSET.y;
 			
 			map_bounds_mask = new Sprite();
 			map_paths = new Sprite();
@@ -172,6 +182,17 @@ package editors
 			_updatePathPoints();
 		}
 		
+		private function e_rightClickPointAdd(e:MouseEvent):void 
+		{
+			// Path Point Add
+			if (_activeTab == 1)
+			{
+				var ni:String = _path_reorderPoints();
+				_pathAddNewPoint(_activePath, ni, e.stageX - MAP_STAGE_OFFSET_X - 50, e.stageY - MAP_STAGE_OFFSET_Y - 50);
+				_updatePathPoints();
+			}
+		}
+		
 		private function _displayObjectGroupOptions():void
 		{
 			// Clear
@@ -233,6 +254,25 @@ package editors
 			_keys["shift"] = e.shiftKey;
 			_keys["alt"] = e.altKey;
 			_keys["ctrl"] = e.ctrlKey;
+			
+			switch (e.keyCode)
+			{
+				case Keyboard.W: 
+					_shiftMap("U");
+					break;
+				
+				case Keyboard.S: 
+					_shiftMap("D");
+					break;
+				
+				case Keyboard.A: 
+					_shiftMap("L");
+					break;
+				
+				case Keyboard.D: 
+					_shiftMap("R");
+					break;
+			}
 		}
 		
 		/**
@@ -301,6 +341,11 @@ package editors
 			if (!Editor.map_image)
 				return;
 			
+			_shiftMap(dir);
+		}
+		
+		private function _shiftMap(dir:String):void 
+		{
 			switch (dir)
 			{
 				case "U": 
@@ -319,6 +364,7 @@ package editors
 					Editor.map_image.x += (_keys["shift"] ? 10 : 1);
 					break;
 			}
+			
 		}
 		
 		/**
@@ -439,8 +485,8 @@ package editors
 			
 			// Create New Path
 			level_object.map_paths[ni] = {"id": ni, "points": {}};
-			_pathAddNewPoint(ni, "1");
-			_pathAddNewPoint(ni, "2");
+			//_pathAddNewPoint(ni, "1");
+			//_pathAddNewPoint(ni, "2");
 			
 			_activePath = ni;
 			map_path_list.items = _getPathArray();
@@ -701,9 +747,26 @@ package editors
 		 * @param	path Path to add point to.
 		 * @param	pos Position of point in path.
 		 */
-		private function _pathAddNewPoint(path:String, pos:String):void
+		private function _pathAddNewPoint(path:String, pos:String, px:int = -999999, py:int = -999999):void
 		{
-			level_object.map_paths[path]["points"][pos] = {"pos": pos, "x": (Number(pos) - 1) * 10, "y": 0};
+			var point:Object = { "pos": pos, "x": (Number(pos) - 1) * 10, "y": 0 };
+			if (pos != "1" && (px == -999999 && py == -999999))
+			{
+				var posI:Number = Number(pos);
+				var lPoint:Object = level_object.map_paths[path]["points"][posI - 1];
+				if (lPoint)
+				{
+					point["x"] = lPoint["x"];
+					point["y"] = lPoint["y"] + 20;
+				}
+				
+			}
+			else if (px != -999999 && py != -999999)
+			{
+				point["x"] = px;
+				point["y"] = py;
+			}
+			level_object.map_paths[path]["points"][pos] = point;
 		}
 		
 		/**
@@ -845,8 +908,8 @@ internal class MapPinPath extends MapPin
 	public override function draw():void
 	{
 		this.graphics.clear();
-		this.graphics.lineStyle(2, ColorUtil.brightenColor(editorMap.path_colors[String(path.charAt(0))], 0.5));
-		this.graphics.beginFill(ColorUtil.darkenColor(editorMap.path_colors[String(path.charAt(0))], 0.7), 1);
+		this.graphics.lineStyle(2, ColorUtil.brightenColor(editorMap.path_colors[String(path.charAt(path.length-1))], 0.5));
+		this.graphics.beginFill(ColorUtil.darkenColor(editorMap.path_colors[String(path.charAt(path.length-1))], 0.7), 1);
 		this.graphics.drawCircle(0, 0, 4);
 		this.graphics.endFill();
 	}

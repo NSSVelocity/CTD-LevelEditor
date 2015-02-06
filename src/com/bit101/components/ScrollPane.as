@@ -160,8 +160,8 @@ package com.bit101.components
 		protected function onMouseWheel(event:MouseEvent):void
 		{
 			var vPercent:Number = (_height - 10) / content.height;
-			if(vPercent > 1) {
-				_vScrollbar.value -= event.delta;
+			if(vPercent < 1) {
+				_vScrollbar.value -= event.delta * 10;
 				onScroll(event);
 			}
 		}
