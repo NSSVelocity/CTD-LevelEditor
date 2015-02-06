@@ -555,7 +555,7 @@ package editors
 				
 				map_paths.graphics.lineStyle(3, 0x00FF00);
 				map_paths.graphics.moveTo(spot["x"], spot["y"]);
-				map_paths.graphics.lineTo(spot["tower"]["x"], spot["tower"]["y"]);
+				map_paths.graphics.lineTo(spot["x"] + spot["tower"]["x"], spot["y"] + spot["tower"]["y"]);
 			}
 		}
 		
@@ -622,12 +622,12 @@ package editors
 				var spot:Object = o[index];
 				
 				// Spot
-				pin = new MapPinSpot(spot["id"], spot["x"], spot["y"]);
+				pin = new MapPinSpot(spot);
 				//pin.addEventListener(MouseEvent.MOUSE_DOWN, e_spotPointDragStart);
 				map_pan.addChild(pin);
 				
 				// Tower Position
-				pin = new MapPinTower(spot["id"], spot["tower"]["x"], spot["tower"]["y"]);
+				pin = new MapPinTower(spot);
 				//pin.addEventListener(MouseEvent.MOUSE_DOWN, e_spotPointDragStart);
 				map_pan.addChild(pin);
 			}
@@ -852,36 +852,14 @@ internal class MapPinPath extends MapPin
 	}
 }
 
-internal class MapPinTower extends MapPin
-{
-	public var id:String;
-	
-	public function MapPinTower(id:String, _x:Number, _y:Number)
-	{
-		this.id = id;
-		
-		super(_x, _y);
-	}
-	
-	public override function draw():void
-	{
-		this.graphics.clear();
-		this.graphics.lineStyle(2, 0xFFEAC1);
-		this.graphics.beginFill(0x473000, 1);
-		this.graphics.drawCircle(0, 0, 5);
-		this.graphics.endFill();
-	}
-}
-
 internal class MapPinSpot extends MapPin
 {
 	public var id:String;
 	
-	public function MapPinSpot(id:String, _x:Number, _y:Number)
+	public function MapPinSpot(obj:Object)
 	{
-		this.id = id;
-		
-		super(_x, _y);
+		this.id = obj["id"];
+		super(obj["x"], obj["y"]);
 	}
 	
 	public override function draw():void
@@ -890,6 +868,27 @@ internal class MapPinSpot extends MapPin
 		this.graphics.lineStyle(3, 0xBFD1FF);
 		this.graphics.beginFill(0x001447, 1);
 		this.graphics.drawCircle(0, 0, 6);
+		this.graphics.endFill();
+	}
+}
+
+internal class MapPinTower extends MapPin
+{
+	public var id:String;
+	
+	public function MapPinTower(obj:Object)
+	{
+		
+		this.id = obj["id"];
+		super(obj["x"] + obj["tower"]["x"], obj["y"] + obj["tower"]["y"]);
+	}
+	
+	public override function draw():void
+	{
+		this.graphics.clear();
+		this.graphics.lineStyle(2, 0xFFEAC1);
+		this.graphics.beginFill(0x473000, 1);
+		this.graphics.drawCircle(0, 0, 5);
 		this.graphics.endFill();
 	}
 }
