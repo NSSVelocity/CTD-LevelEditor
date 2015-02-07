@@ -673,8 +673,9 @@ package editors
 			if (!p[index])
 				return;
 			
+			var pID:String = String(p[index]["id"]);
 			var path:Object = p[index]["points"];
-			map_paths.graphics.lineStyle(4, path_colors[String(p[index]["id"]).charAt(p[index]["id"].length - 1)], (p[index]["id"] == _activePath ? 1 : 0.6));
+			map_paths.graphics.lineStyle(4, path_colors[pID.charAt(pID.length - 1)], (pID == _activePath ? 1 : 0.6));
 			
 			// Check for atleast 2 points.
 			if (!path["1"] && !path["2"])
