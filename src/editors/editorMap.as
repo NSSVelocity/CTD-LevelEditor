@@ -1,5 +1,6 @@
 package editors
 {
+	import com.bit101.components.CheckBox;
 	import com.bit101.components.ComboBox;
 	import com.bit101.components.InputText;
 	import com.bit101.components.Label;
@@ -64,6 +65,8 @@ package editors
 		private var map_move_down:PushButton;
 		private var map_widthBox:InputText;
 		private var map_heightBox:InputText;
+		private var map_xBox:InputText;
+		private var map_yBox:InputText;
 		
 		private var tab_paths:PushButton;
 		private var tab_towers:PushButton;
@@ -73,6 +76,7 @@ package editors
 		private var map_path_list:ComboBox;
 		private var map_path_add:PushButton;
 		private var map_path_remove:PushButton;
+		private var map_path_lock:CheckBox;
 		private var map_point_add:PushButton;
 		private var map_point_inputs:Array;
 		
@@ -118,7 +122,7 @@ package editors
 			
 			///- Create Editor Menu
 			editor_menu_pan = new Panel(this);
-			editor_menu_pan.setSize(200, 80);
+			editor_menu_pan.setSize(200, 105);
 			
 			// Create Map Loading Buttons
 			file_button = new PushButton(editor_menu_pan, 5, 5, "Load Map Image", e_loadMapButton);
@@ -139,30 +143,39 @@ package editors
 			map_move_down.tag = "D";
 			
 			// Map Bounds Boxes
-			map_widthBox = new InputText(editor_menu_pan, 5, 30, level_object.map_bounds["width"].toString(), e_boundsChange);
-			map_widthBox.setSize(80, 20);
+			map_xBox = new InputText(editor_menu_pan, 5, 30, "0", e_mapOffsetChange);
+			map_xBox.setSize(80, 20);
 			
 			new Label(editor_menu_pan, 96, 30, "x");
 			
-			map_heightBox = new InputText(editor_menu_pan, 115, 30, level_object.map_bounds["height"].toString(), e_boundsChange);
+			map_yBox = new InputText(editor_menu_pan, 115, 30, "0", e_mapOffsetChange);
+			map_yBox.setSize(80, 20);
+			
+			// Map Bounds Boxes
+			map_widthBox = new InputText(editor_menu_pan, 5, 55, level_object.map_bounds["width"].toString(), e_boundsChange);
+			map_widthBox.setSize(80, 20);
+			
+			new Label(editor_menu_pan, 96, 55, "x");
+			
+			map_heightBox = new InputText(editor_menu_pan, 115, 55, level_object.map_bounds["height"].toString(), e_boundsChange);
 			map_heightBox.setSize(80, 20);
 			
 			// Tab Buttons
-			tab_paths = new PushButton(editor_menu_pan, 5, 55, "Paths", e_tabSelection);
+			tab_paths = new PushButton(editor_menu_pan, 5, 80, "Paths", e_tabSelection);
 			tab_paths.setSize(60, 20);
 			tab_paths.tag = 1;
 			
-			tab_towers = new PushButton(editor_menu_pan, 70, 55, "Towers", e_tabSelection);
+			tab_towers = new PushButton(editor_menu_pan, 70, 80, "Towers", e_tabSelection);
 			tab_towers.setSize(60, 20);
 			tab_towers.tag = 2;
 			
-			tab_spots = new PushButton(editor_menu_pan, 135, 55, "Spots", e_tabSelection);
+			tab_spots = new PushButton(editor_menu_pan, 135, 80, "Spots", e_tabSelection);
 			tab_spots.setSize(60, 20);
 			tab_spots.tag = 3;
 			
 			///- Selection Options
 			editor_menu_options_pan = new Panel(this);
-			editor_menu_options_pan.setSize(200, 90);
+			editor_menu_options_pan.setSize(200, 70);
 			
 			_displayObjectGroupOptions();
 			
@@ -180,17 +193,6 @@ package editors
 				e_displayMap();
 			
 			_updatePathPoints();
-		}
-		
-		private function e_rightClickPointAdd(e:MouseEvent):void 
-		{
-			// Path Point Add
-			if (_activeTab == 1)
-			{
-				var ni:String = _path_reorderPoints();
-				_pathAddNewPoint(_activePath, ni, e.stageX - MAP_STAGE_OFFSET_X - 50, e.stageY - MAP_STAGE_OFFSET_Y - 50);
-				_updatePathPoints();
-			}
 		}
 		
 		private function _displayObjectGroupOptions():void
@@ -212,7 +214,14 @@ package editors
 				map_path_remove = new PushButton(editor_menu_options_pan, 103, 30, "Remove Path", e_pathRemove);
 				map_path_remove.setSize(92, 20);
 				
+				map_path_lock = new CheckBox(editor_menu_options_pan, 5, 55, "Lock Path", e_togglePathLock);
 			}
+		}
+		
+		private function e_togglePathLock(e:Event):void
+		{
+			level_object.map_paths[_activePath]["path_locked"] = !level_object.map_paths[_activePath]["path_locked"];
+			_updatePathPoints();
 		}
 		
 		/**
@@ -237,12 +246,12 @@ package editors
 			map_pan.update();
 			
 			// Update Options
-			editor_menu_options_pan.move(width - 200, 85);
+			editor_menu_options_pan.move(width - 200, 110);
 			
 			// Update Node Editor
 			editor_menu_pan.move(width - 200, 0);
-			editor_win.move(width - 200, 180);
-			editor_win.setSize(editor_win.width, height - 180);
+			editor_win.move(width - 200, 185);
+			editor_win.setSize(editor_win.width, height - 185);
 			editor_pan.setSize(editor_win.width, editor_win.height - 20);
 		}
 		
@@ -283,6 +292,23 @@ package editors
 			_keys["shift"] = e.shiftKey;
 			_keys["alt"] = e.altKey;
 			_keys["ctrl"] = e.ctrlKey;
+		}
+		
+		/**
+		 * Handles context based right-click events on the map editor.
+		 */
+		private function e_rightClickPointAdd(e:MouseEvent):void
+		{
+			// Path Point Add
+			if (_activeTab == 1)
+			{
+				if (level_object.map_paths[_activePath]["path_locked"])
+					return;
+					
+				var ni:String = _path_reorderPoints();
+				_pathAddNewPoint(_activePath, ni, e.stageX - MAP_STAGE_OFFSET_X - 50, e.stageY - MAP_STAGE_OFFSET_Y - 50);
+				_updatePathPoints();
+			}
 		}
 		
 		/**
@@ -344,29 +370,6 @@ package editors
 			_shiftMap(dir);
 		}
 		
-		private function _shiftMap(dir:String):void 
-		{
-			switch (dir)
-			{
-				case "U": 
-					Editor.map_image.y -= (_keys["shift"] ? 10 : 1);
-					break;
-				
-				case "D": 
-					Editor.map_image.y += (_keys["shift"] ? 10 : 1);
-					break;
-				
-				case "L": 
-					Editor.map_image.x -= (_keys["shift"] ? 10 : 1);
-					break;
-				
-				case "R": 
-					Editor.map_image.x += (_keys["shift"] ? 10 : 1);
-					break;
-			}
-			
-		}
-		
 		/**
 		 * Begins the Map Load Image event tree.
 		 */
@@ -402,7 +405,21 @@ package editors
 			Editor.map_image.y = 50;
 			map_pan.addChildAt(Editor.map_image, 0);
 			
+			_shiftMap(null);
+			
 			map_pan.update();
+		}
+		
+		/**
+		 * Handles the Map Image x/y position Text change event.
+		 */
+		private function e_mapOffsetChange(e:Event):void
+		{
+			if (Editor.map_image)
+			{
+				Editor.map_image.x = int(map_xBox.text) + 50;
+				Editor.map_image.y = int(map_yBox.text) + 50;
+			}
 		}
 		
 		/**
@@ -439,6 +456,7 @@ package editors
 			// Update Active Path
 			_activePath = new_path["data"];
 			
+			map_path_lock.selected = level_object.map_paths[_activePath]["path_locked"];
 			_updatePathPoints();
 		}
 		
@@ -479,6 +497,9 @@ package editors
 			_updatePathPoints();
 		}
 		
+		/**
+		 * Adds a new path for the level.
+		 */
 		private function e_pathAdd(e:Event):void
 		{
 			var ni:String = _path_reorderPaths();
@@ -495,6 +516,9 @@ package editors
 			_updatePathPoints();
 		}
 		
+		/**
+		 * Removes the active path.
+		 */
 		private function e_pathRemove(e:Event):void
 		{
 			
@@ -507,6 +531,38 @@ package editors
 			// Update Active Path
 			map_path_list.items = _getPathArray();
 			map_path_list.selectedItem = "1";
+		}
+		
+		/**
+		 * Shift the map image based on input direction.
+		 * @param	dir Direction to shift map.
+		 */
+		private function _shiftMap(dir:String):void
+		{
+			if (!Editor.map_image)
+				return;
+			
+			switch (dir)
+			{
+				case "U": 
+					Editor.map_image.y -= (_keys["shift"] ? 10 : 1);
+					break;
+				
+				case "D": 
+					Editor.map_image.y += (_keys["shift"] ? 10 : 1);
+					break;
+				
+				case "L": 
+					Editor.map_image.x -= (_keys["shift"] ? 10 : 1);
+					break;
+				
+				case "R": 
+					Editor.map_image.x += (_keys["shift"] ? 10 : 1);
+					break;
+			}
+			
+			map_xBox.text = (int(Editor.map_image.x) - 50).toString();
+			map_yBox.text = (int(Editor.map_image.y) - 50).toString();
 		}
 		
 		/**
@@ -618,7 +674,7 @@ package editors
 				return;
 			
 			var path:Object = p[index]["points"];
-			map_paths.graphics.lineStyle(4, path_colors[String(p[index]["id"]).charAt(0)], (p[index]["id"] == _activePath ? 1 : 0.6));
+			map_paths.graphics.lineStyle(4, path_colors[String(p[index]["id"]).charAt(p[index]["id"].length - 1)], (p[index]["id"] == _activePath ? 1 : 0.6));
 			
 			// Check for atleast 2 points.
 			if (!path["1"] && !path["2"])
@@ -649,6 +705,9 @@ package editors
 			o = level_object.map_paths;
 			for (index in o)
 			{
+				if (o[index]["path_locked"])
+					continue;
+				
 				var path:Object = o[index]["points"];
 				for (var point_index:String in path)
 				{
@@ -663,19 +722,22 @@ package editors
 			
 			// Map Spots
 			o = level_object.map_spots;
-			for (index in o)
+			if (o["1"] && !o["1"]["spots_locked"])
 			{
-				var spot:Object = o[index];
-				
-				// Spot
-				pin = new MapPinSpot(spot);
-				//pin.addEventListener(MouseEvent.MOUSE_DOWN, e_spotPointDragStart);
-				map_pan.addChild(pin);
-				
-				// Tower Position
-				pin = new MapPinTower(spot);
-				//pin.addEventListener(MouseEvent.MOUSE_DOWN, e_spotPointDragStart);
-				map_pan.addChild(pin);
+				for (index in o)
+				{
+					var spot:Object = o[index];
+					
+					// Spot
+					pin = new MapPinSpot(spot);
+					//pin.addEventListener(MouseEvent.MOUSE_DOWN, e_spotPointDragStart);
+					map_pan.addChild(pin);
+					
+					// Tower Position
+					pin = new MapPinTower(spot);
+					//pin.addEventListener(MouseEvent.MOUSE_DOWN, e_spotPointDragStart);
+					map_pan.addChild(pin);
+				}
 			}
 		}
 		
@@ -726,15 +788,18 @@ package editors
 				nodeX = new InputText(editor_pan, 40, index * 30, point["x"], e_pointTextUpdate);
 				nodeX.setSize(60, 20);
 				nodeX.maxChars = 5;
+				nodeX.enabled = !level_object.map_paths[_activePath]["path_locked"];
 				
 				// Y
 				nodeY = new InputText(editor_pan, 105, index * 30, point["y"], e_pointTextUpdate);
 				nodeY.setSize(60, 20);
 				nodeY.maxChars = 5;
+				nodeY.enabled = !level_object.map_paths[_activePath]["path_locked"];
 				
 				// Delete
 				nodeDelete = new PushButton(editor_pan, 168, index * 30, "D", e_pointDeletion);
 				nodeDelete.setSize(20, 20);
+				nodeDelete.enabled = !level_object.map_paths[_activePath]["path_locked"];
 				
 				var tag:Object = {"iID": nodeID, "iX": nodeX, "iY": nodeY, "iDel": nodeDelete, "pos": point["pos"]}
 				nodeID.tag = nodeX.tag = nodeY.tag = nodeDelete.tag = tag;
@@ -749,7 +814,7 @@ package editors
 		 */
 		private function _pathAddNewPoint(path:String, pos:String, px:int = -999999, py:int = -999999):void
 		{
-			var point:Object = { "pos": pos, "x": (Number(pos) - 1) * 10, "y": 0 };
+			var point:Object = {"pos": pos, "x": (Number(pos) - 1) * 10, "y": 0};
 			if (pos != "1" && (px == -999999 && py == -999999))
 			{
 				var posI:Number = Number(pos);
@@ -908,8 +973,8 @@ internal class MapPinPath extends MapPin
 	public override function draw():void
 	{
 		this.graphics.clear();
-		this.graphics.lineStyle(2, ColorUtil.brightenColor(editorMap.path_colors[String(path.charAt(path.length-1))], 0.5));
-		this.graphics.beginFill(ColorUtil.darkenColor(editorMap.path_colors[String(path.charAt(path.length-1))], 0.7), 1);
+		this.graphics.lineStyle(2, ColorUtil.brightenColor(editorMap.path_colors[String(path.charAt(path.length - 1))], 0.5));
+		this.graphics.beginFill(ColorUtil.darkenColor(editorMap.path_colors[String(path.charAt(path.length - 1))], 0.7), 1);
 		this.graphics.drawCircle(0, 0, 4);
 		this.graphics.endFill();
 	}
