@@ -43,6 +43,7 @@ package editors
 		// Active pin
 		private var _dragPin:*;
 		private var _tagReference:Object;
+		private var _pinReference:Object;
 		
 		// Level Save
 		public var level_object:Level;
@@ -304,7 +305,7 @@ package editors
 			{
 				if (level_object.map_paths[_activePath]["path_locked"])
 					return;
-					
+				
 				var ni:String = _path_reorderPoints();
 				_pathAddNewPoint(_activePath, ni, e.stageX - MAP_STAGE_OFFSET_X - 50, e.stageY - MAP_STAGE_OFFSET_Y - 50);
 				_updatePathPoints();
@@ -335,6 +336,7 @@ package editors
 			_dragPin.stopDrag();
 			stage.removeEventListener(MouseEvent.MOUSE_MOVE, e_pathPointDragMove);
 			stage.removeEventListener(MouseEvent.MOUSE_UP, e_pathPointDragEnd);
+			map_pan.update();
 		}
 		
 		/**
@@ -354,7 +356,59 @@ package editors
 			}
 			
 			_drawPaths();
+		}
+		
+		/**
+		 * Begin Map Pin drag for Spots.
+		 */
+		private function e_spotPointDragStart(e:MouseEvent):void
+		{
+			// Set Pin
+			_dragPin = (e.target as MapPinSpot);
+			_dragPin.startDrag(true);
+			map_pan.setChildIndex(_dragPin, map_pan.content.numChildren - 1);
+			_tagReference = _getInputReference(_dragPin);
+			_pinReference = _getPinReference(_dragPin);
+			
+			// Add Events
+			stage.addEventListener(MouseEvent.MOUSE_MOVE, e_spotPointDragMove);
+			stage.addEventListener(MouseEvent.MOUSE_UP, e_spotPointDragEnd);
+		}
+		
+		/**
+		 * End Map Pin drag.
+		 */
+		private function e_spotPointDragEnd(e:MouseEvent):void
+		{
+			_dragPin.stopDrag();
+			stage.removeEventListener(MouseEvent.MOUSE_MOVE, e_spotPointDragMove);
+			stage.removeEventListener(MouseEvent.MOUSE_UP, e_spotPointDragEnd);
 			map_pan.update();
+		}
+		
+		/**
+		 * Mouse movement during a Map Pin Drag.
+		 */
+		private function e_spotPointDragMove(e:MouseEvent):void
+		{
+			var point:Object = level_object.map_spots[_dragPin.id];
+			
+			point["x"] = _dragPin.x;
+			point["y"] = _dragPin.y;
+			
+			if (_tagReference)
+			{
+				(_tagReference["iX"] as InputText).text = _dragPin.x.toString();
+				(_tagReference["iY"] as InputText).text = _dragPin.y.toString();
+			}
+			
+			if (_pinReference)
+			{
+				_pinReference.x = point["x"] + point["tower"]["x"];
+				_pinReference.y = point["y"] + point["tower"]["y"];
+			}
+			
+			_drawPaths();
 		}
 		
 		/**
@@ -453,6 +507,9 @@ package editors
 		{
 			var new_path:Object = map_path_list.selectedItem;
 			
+			if (!new_path)
+				return;
+			
 			// Update Active Path
 			_activePath = new_path["data"];
 			
@@ -506,8 +563,6 @@ package editors
 			
 			// Create New Path
 			level_object.map_paths[ni] = {"id": ni, "points": {}};
-			//_pathAddNewPoint(ni, "1");
-			//_pathAddNewPoint(ni, "2");
 			
 			_activePath = ni;
 			map_path_list.items = _getPathArray();
@@ -521,16 +576,25 @@ package editors
 		 */
 		private function e_pathRemove(e:Event):void
 		{
-			
 			delete level_object.map_paths[_activePath];
 			
-			_activePath = "1";
 			_path_reorderPaths();
+			
+			// Check if new path at exiting activePath exist.
+			for (var activeId:int = int(_activePath); activeId >= 1; activeId--)
+			{
+				if (level_object.map_paths[activeId])
+				{
+					_activePath = String(activeId);
+					break;
+				}
+			}
+			
 			_updatePathPoints();
 			
 			// Update Active Path
 			map_path_list.items = _getPathArray();
-			map_path_list.selectedItem = "1";
+			map_path_list.selectedItem = _activePath;
 		}
 		
 		/**
@@ -573,8 +637,11 @@ package editors
 		 */
 		private function _getInputReference(dragPin:*):Object
 		{
+			var item:Object;
+			var id:String;
+			
 			// Path Pins
-			if (_activeTab == 1)
+			if (_activeTab == 1 && dragPin is MapPinPath)
 			{
 				var path:String = dragPin.path;
 				var pos:String = dragPin.pos;
@@ -582,10 +649,54 @@ package editors
 					return null;
 				
 				// Loop Inputs
-				for each (var item:Object in map_point_inputs)
+				for each (item in map_point_inputs)
 				{
 					if (item["pos"] == pos)
 						return item;
+				}
+			}
+			
+			// Spots
+			if (_activeTab == 2 && dragPin is MapPinSpot)
+			{
+				id = dragPin.id;
+				
+				// Loop Inputs
+				for each (item in map_point_inputs)
+				{
+					if (item["id"] == pos)
+						return item;
+				}
+			}
+			
+			// Tower
+			if (_activeTab == 2 && dragPin is MapPinTower)
+			{
+				id = dragPin.id;
+				
+				// Loop Inputs
+				for each (item in map_point_inputs)
+				{
+					if (item["id"] == pos)
+						return item;
+				}
+			}
+			return null;
+		}
+		
+		/**
+		 * Find the matching tower pin for the requested spot.
+		 * @param	dragPin The tower pin
+		 * @return Tower Pin Object
+		 */
+		private function _getPinReference(dragPin:*):MapPinTower
+		{
+			for (var i:int = 3; i < map_pan.content.numChildren; i++)
+			{
+				var c:* = map_pan.content.getChildAt(i);
+				if (c is MapPinTower && c.id == dragPin.id)
+				{
+					return c;
 				}
 			}
 			return null;
@@ -714,7 +825,7 @@ package editors
 				{
 					var point:Object = path[point_index];
 					
-					pin = new MapPinPath(index, point["pos"], point["x"], point["y"]);
+					pin = new MapPinPath(index, point);
 					pin.addEventListener(MouseEvent.MOUSE_DOWN, e_pathPointDragStart);
 					
 					map_pan.addChild(pin);
@@ -731,12 +842,12 @@ package editors
 					
 					// Spot
 					pin = new MapPinSpot(spot);
-					//pin.addEventListener(MouseEvent.MOUSE_DOWN, e_spotPointDragStart);
+					pin.addEventListener(MouseEvent.MOUSE_DOWN, e_spotPointDragStart);
 					map_pan.addChild(pin);
 					
 					// Tower Position
 					pin = new MapPinTower(spot);
-					//pin.addEventListener(MouseEvent.MOUSE_DOWN, e_spotPointDragStart);
+					//pin.addEventListener(MouseEvent.MOUSE_DOWN, e_towerPointDragStart);
 					map_pan.addChild(pin);
 				}
 			}
@@ -963,12 +1074,12 @@ internal class MapPinPath extends MapPin
 	public var path:String;
 	public var pos:String;
 	
-	public function MapPinPath(path:String, pos:String, _x:Number, _y:Number)
+	public function MapPinPath(path:String, obj:Object)
 	{
 		this.path = path;
-		this.pos = pos;
+		this.pos = obj["pos"];
 		
-		super(_x, _y);
+		super(obj["x"], obj["y"]);
 	}
 	
 	public override function draw():void
@@ -1007,7 +1118,6 @@ internal class MapPinTower extends MapPin
 	
 	public function MapPinTower(obj:Object)
 	{
-		
 		this.id = obj["id"];
 		super(obj["x"] + obj["tower"]["x"], obj["y"] + obj["tower"]["y"]);
 	}
