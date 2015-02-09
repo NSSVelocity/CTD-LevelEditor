@@ -219,12 +219,6 @@ package editors
 			}
 		}
 		
-		private function e_togglePathLock(e:Event):void
-		{
-			level_object.map_paths[_activePath]["path_locked"] = !level_object.map_paths[_activePath]["path_locked"];
-			_updatePathPoints();
-		}
-		
 		/**
 		 * Cleans up class before deletion.
 		 */
@@ -518,6 +512,16 @@ package editors
 		}
 		
 		/**
+		 * Handles the path locking checkbox.
+		 */
+		private function e_togglePathLock(e:Event):void
+		{
+			level_object.map_paths[_activePath]["path_locked"] = !level_object.map_paths[_activePath]["path_locked"];
+			_updatePathPoints();
+		}
+		
+		
+		/**
 		 * Handles the X and Y point input events.
 		 */
 		private function e_pointTextUpdate(e:Event):void
@@ -670,7 +674,7 @@ package editors
 			}
 			
 			// Tower
-			if (_activeTab == 2 && dragPin is MapPinTower)
+			if (_activeTab == 3 && dragPin is MapPinTower)
 			{
 				id = dragPin.id;
 				
@@ -936,7 +940,6 @@ package editors
 					point["x"] = lPoint["x"];
 					point["y"] = lPoint["y"] + 20;
 				}
-				
 			}
 			else if (px != -999999 && py != -999999)
 			{

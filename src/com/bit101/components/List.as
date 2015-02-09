@@ -115,8 +115,8 @@ package com.bit101.components
 			for(var i:int = 0; i < numItems; i++)
 			{
 
-				item = new _listItemClass(_itemHolder, 0, i * _listItemHeight);
-				item.setSize(width, _listItemHeight);
+				item = new _listItemClass(_itemHolder, 1, i * _listItemHeight);
+				item.setSize(width-1, _listItemHeight);
 				item.defaultColor = _defaultColor;
 
 				item.selectedColor = _selectedColor;
@@ -355,11 +355,23 @@ package com.bit101.components
 		public function set selectedItem(item:Object):void
 		{
 			var index:int = _items.indexOf(item);
-			// find In Object Array
+			var i:int;
+			// find In Data
 			if (index == -1) {
-				for (var i:int = 0; i < _items.length; i++)
+				for (i = 0; i < _items.length; i++)
 				{
 					if (_items[i].hasOwnProperty("data") && _items[i].data == item)
+					{
+						index = i;
+						break;
+					}
+				}
+			}
+			// find In Labels
+			if (index == -1) {
+				for (i = 0; i < _items.length; i++)
+				{
+					if (_items[i].hasOwnProperty("label") && _items[i].label == item)
 					{
 						index = i;
 						break;
@@ -382,6 +394,17 @@ package com.bit101.components
 			return null;
 		}
 
+		public function get selectedItemData():Object
+		{
+			var obj:* = selectedItem;
+			return (obj ? obj["data"] : null);
+		}
+		public function get selectedItemLabel():Object
+		{
+			var obj:* = selectedItem;
+			return (obj ? obj["label"] : null);
+		}
+		
 		/**
 		 * Sets/gets the default background color of list items.
 		 */

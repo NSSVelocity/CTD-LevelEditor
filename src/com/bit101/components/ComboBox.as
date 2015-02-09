@@ -143,7 +143,7 @@ package com.bit101.components
 			_dropDownButton.draw();
 			_dropDownButton.x = _width - height;
 			
-			_list.setSize((_listWidth != 0 ? _listWidth : _width), _numVisibleItems * _list.listItemHeight);
+			_list.setSize((_listWidth != 0 ? _listWidth : _width) - 1, _numVisibleItems * _list.listItemHeight);
 		}
 		
 		
@@ -300,6 +300,14 @@ package com.bit101.components
 		public function get selectedItem():Object
 		{
 			return _list.selectedItem;
+		}
+		public function get selectedItemData():Object
+		{
+			return _list.selectedItemData;
+		}
+		public function get selectedItemLabel():Object
+		{
+			return _list.selectedItemLabel;
 		}
 		
 		/**

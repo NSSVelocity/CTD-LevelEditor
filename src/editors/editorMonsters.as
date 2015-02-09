@@ -21,7 +21,6 @@ package editors
 		private var pan:ScrollPane;
 		private var inputs:Array = [];
 		
-		private var saveButton:PushButton;
 		private var addButton:PushButton;
 		
 		public function editorMonsters(_level_object:Level)
@@ -47,8 +46,7 @@ package editors
 			pan.autoHideScrollBar = true;
 			
 			// Create Buttons
-			//saveButton = new PushButton(pan, 10, 10, "Save", e_saveButton);
-			addButton = new PushButton(pan, /*120*/10, 10, "Add Monster", e_addButton);
+			addButton = new PushButton(pan, 10, 10, "Add Monster", e_addButton);
 			
 			// Add Monsters
 			for (var i:int = 0; i < level_object.monsters.length; i++)
@@ -56,12 +54,24 @@ package editors
 				_addMonster(level_object.monsters[i]);
 			}
 			
-			updatePositions();
+			_updatePositions();
 		}
 		
 		override public function destroy():void
 		{
-			e_saveButton();
+			_save();
+		}
+		
+		/**
+		 * Resizes Editor window based on provided sizes.
+		 * @param	width
+		 * @param	height
+		 */
+		override public function resize(width:Number, height:Number):void
+		{
+			win.setSize(width, height);
+			pan.setSize(win.width, win.height - 20);
+			pan.update();
 		}
 		
 		/**
@@ -84,7 +94,7 @@ package editors
 		/**
 		 * Updates the monster input boxes after an add / remove.
 		 */
-		private function updatePositions():void
+		private function _updatePositions():void
 		{
 			// Sort by ID
 			_sortInput();
@@ -108,7 +118,7 @@ package editors
 		private function e_addButton(e:Event):void
 		{
 			_addMonster();
-			updatePositions();
+			_updatePositions();
 		}
 		
 		/**
@@ -124,13 +134,13 @@ package editors
 			
 			inputs.splice(inputs.indexOf(tag), 1);
 			
-			updatePositions();
+			_updatePositions();
 		}
 		
 		/**
 		 * Handles Saving of the Monsters editor.
 		 */
-		private function e_saveButton(e:Event = null):void
+		private function _save():void
 		{
 			_sortInput();
 			
@@ -145,7 +155,7 @@ package editors
 			level_object.monsters = o;
 			
 			// Update Positions
-			updatePositions();
+			_updatePositions();
 		}
 		
 		/**
@@ -177,18 +187,6 @@ package editors
 				}
 			}
 			return val + 1;
-		}
-		
-		/**
-		 * Resizes Editor window based on provided sizes.
-		 * @param	width
-		 * @param	height
-		 */
-		override public function resize(width:Number, height:Number):void
-		{
-			win.setSize(width, height);
-			pan.setSize(win.width, win.height - 20);
-			pan.update();
 		}
 	
 	}
