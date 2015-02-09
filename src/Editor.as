@@ -211,6 +211,10 @@ package
 			if (editor)
 				editor.resize(stage_width - 10, stage_height - 45);
 		}
+		
+		public static function upperCase(str:String) : String {
+			return str.substr(0, 1).toUpperCase() + str.substr(1, str.length).toLowerCase();
+		}
 	
 	}
 

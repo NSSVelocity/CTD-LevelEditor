@@ -1,5 +1,6 @@
 package editors
 {
+	import com.bit101.components.Label;
 	import com.bit101.components.PushButton;
 	import com.bit101.components.ScrollPane;
 	import com.bit101.components.Window;
@@ -19,6 +20,7 @@ package editors
 		public var inputs:Array = [];
 		
 		private var addButton:PushButton;
+		private var levelDetails:Label;
 		
 		public function editorWave(_level_object:Level)
 		{
@@ -44,6 +46,8 @@ package editors
 			
 			// Create Buttons
 			addButton = new PushButton(pan, 10, 10, "Add Wave", e_addButton);
+			
+			levelDetails = new Label(pan, 120, 10, "");
 			
 			// Add Waves
 			for each (var wave:Object in level_object.waves)
@@ -90,6 +94,7 @@ package editors
 		{
 			// Sort by ID
 			sortInput();
+			updateLevelDetails();
 			
 			// Position Inputs
 			for (var i:int = 0; i < inputs.length; i++)
@@ -101,6 +106,36 @@ package editors
 			
 			// Update ScrollPane Scroll bars.
 			pan.update();
+		}
+		
+		/**
+		 * Displays the current level details for quick reference.
+		 */
+		public function updateLevelDetails():void
+		{
+			var text:String = "Enemies: " + inputs.length;
+			var totalWaves:int = 1;
+			var monTotal:Object = {};
+			for (var i:int = 0; i < inputs.length; i++)
+			{
+				var step:WavePanel = inputs[i];
+				
+				if (!monTotal[step.typeBox.selectedItemLabel])
+					monTotal[step.typeBox.selectedItemLabel] = 1;
+				else
+					monTotal[step.typeBox.selectedItemLabel]++;
+				
+				if (step.waveEndBox.selected)
+					totalWaves++;
+			}
+			text += ",  Waves " + totalWaves + "  -  ";
+			for (var mon:String in monTotal)
+			{
+				if (mon == "-DELAY-") continue;
+				text += Editor.upperCase(mon) + ": " + monTotal[mon] + ",  ";
+			}
+			text = text.substring(0, text.length - 3);
+			levelDetails.text = text;
 		}
 		
 		/**
@@ -231,6 +266,11 @@ package editors
 			_updatePositions();
 		}
 		
+		public function e_endWaveUpdate(e:Event):void
+		{
+			updateLevelDetails();
+		}
+		
 		/**
 		 * Handles Saving of the Waves editor.
 		 */
@@ -336,7 +376,7 @@ internal class WavePanel extends Sprite
 		reverseBox.selected = (wave && wave["reversed"]);
 		
 		// End of Wave Flag
-		waveEndBox = new CheckBox(this, 610, 0, "End of Wave");
+		waveEndBox = new CheckBox(this, 610, 0, "End of Wave", editor.e_endWaveUpdate);
 		waveEndBox.selected = (wave && wave["end_of_wave"]);
 		
 		// Delete Button
